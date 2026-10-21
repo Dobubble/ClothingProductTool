@@ -4,12 +4,17 @@ import sqlite3
 
 import database
 
+selected_product_id = None
+
 def select_product(event=None):
+    
+    global selected_product_id
     """ 选中商品后，将商品信息填入输入框"""
     
     selected = product_table.selection()
     
     if not selected:
+        selected_product_id = None
         return
         
     # 获取选中的第一条记录
@@ -17,6 +22,9 @@ def select_product(event=None):
     
     #
     values = item["values"]
+    
+    # 保存选中商品的ID
+    selected_product_id = int(values[0])
     
     code_entry.delete(0, tk.END)
     name_entry.delete(0, tk.END)
@@ -50,12 +58,19 @@ def search_product():
         )
 
 def refresh_products():
+    
+    global selected_product_id
+    
     """ 从数据库读取并显示所有商品"""
     
-    # 清空当前列表
+    # 清空当前编辑状态
+    selected_product_id = None
+    
+    # 清空商品列表
     for item in product_table.get_children():
         product_table.delete(item)
-        
+    
+    # 读取数据库
     products = database.get_all_products()
     
     # 显示商品
@@ -70,6 +85,13 @@ def refresh_products():
     
 
 def add_product():
+    if product_table.selection():
+        messagebox.showwarning(
+            "提示",
+            "当前已选中商品。添加新商品前，请先取消列表选择"
+        )
+        return
+    
     """将输入的商品信息添加到列表"""
     code = code_entry.get().strip()
     name = name_entry.get().strip()
@@ -101,6 +123,71 @@ def add_product():
     
     code_entry.focus()
     
+def save_product_changes():
+    
+    global selected_product_id
+    """ 保存选中商品的修改 """
+    
+    # 必须先选择商品
+    if selected_product_id is None:
+        messagebox.showwarning(
+            "提示",
+            "请先选择需要修改的商品"
+        )
+        return
+        
+    # 读取输入框内容
+    code = code_entry.get().strip()
+    name = name_entry.get().strip()
+    size = size_entry.get().strip()
+    
+    if not code or not name:
+        messagebox.showwarning(
+            "提示",
+            "商品货号和名称不能为空"
+        )
+        return
+        
+    try:
+        affected = database.update_product(
+            selected_product_id,
+            code,
+            name,
+            size
+        )
+        
+    except sqlite3.Error as exc:
+        messagebox.showerror(
+            "数据库错误",
+            f"修改失败：{exc}"
+        )
+        return
+    
+    if affected == 0:
+        messagebox.showwarning(
+            "提示",
+            "商品不存在，可能已经被删除"
+        )
+        refresh_products()
+        selected_product_id = None
+        return
+        
+    # 清楚选择状态
+    selected_product_id = None
+    
+    # 刷新商品列表
+    refresh_products()
+    
+    # 清空输入框
+    code_entry.delete(0, tk.END)
+    name_entry.delete(0, tk.END)
+    size_entry.delete(0, tk.END)
+    
+    messagebox.showinfo(
+        "成功",
+        "商品修改成功"
+    )
+    
 def main():
     # 初始化数据
     database.init_database()
@@ -108,6 +195,7 @@ def main():
     global product_table
     global code_entry, name_entry, size_entry
     global search_entry
+    # global selected_product_id
     
     # 创建主窗口
     root = tk.Tk()
@@ -148,6 +236,13 @@ def main():
         command=add_product
     )
     add_button.grid(row=1, column=3, padx=5, pady=8)
+    
+    update_button = ttk.Button(
+        input_frame,
+        text="保存修改",
+        command=save_product_changes
+    )
+    update_button.grid(row=2, column=3, padx=5, pady=8)
     
     # 商品搜索区域
     search_frame = ttk.LabelFrame(

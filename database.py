@@ -62,3 +62,18 @@ def search_products(keyword):
         )
         
         return cursor.fetchall()
+        
+def update_product(product_id, code, name, size):
+    """ 根据商品ID 修改商品资料 """
+    
+    with get_connection() as conn:
+        cursor = conn.execute(
+            """
+            UPDATE products
+            SET code = ?, name = ?, size = ?
+            WHERE id = ?
+            """,
+            (code, name, size, product_id)
+        )
+        
+        return cursor.rowcount
