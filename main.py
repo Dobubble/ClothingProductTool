@@ -259,6 +259,29 @@ def delete_product():
         f"商品 ID={product_id}已经删除"
     )
     
+def new_product():
+    """ 切换到新增商品状态 """
+    
+    global selected_product_id
+    
+    # 清除当前选中的商品ID
+    selected_product_id = None
+    
+    # 取消商品列表的选择
+    selected = product_table.selection()
+    
+    if selected:
+        product_table.selection_remove(*selected)
+        
+    # 清空输入框
+    code_entry.delete(0, tk.END)
+    name_entry.delete(0, tk.END)
+    size_entry.delete(0, tk.END)
+    
+    # 将光标放到商品货号输入框
+    code_entry.focus_set()
+    
+    
     
 def main():
     # 初始化数据
@@ -301,20 +324,27 @@ def main():
     )
     size_entry=ttk.Entry(input_frame, width=20)
     size_entry.grid(row=1, column=1, padx=5, pady=8)
+    
+    new_button = ttk.Button(
+        input_frame,
+        text="新建商品",
+        command=new_product
+    )
+    new_button.grid(row=2, column=1, padx=5, pady=8)
 
     add_button = ttk.Button(
         input_frame,
         text="添加商品",
         command=add_product
     )
-    add_button.grid(row=1, column=3, padx=5, pady=8)
+    add_button.grid(row=2, column=2, padx=5, pady=8)
     
     update_button = ttk.Button(
         input_frame,
         text="保存修改",
         command=save_product_changes
     )
-    update_button.grid(row=2, column=3, padx=5, pady=8)
+    update_button.grid(row=3, column=1, padx=5, pady=8)
     
     # 删除按钮
     delete_button = ttk.Button(
@@ -322,13 +352,7 @@ def main():
         text="删除商品",
         command=delete_product
     )
-    
-    delete_button.grid(
-        row=2,
-        column=2,
-        padx=5,
-        pady=8
-    )
+    delete_button.grid(row=3,column=2,padx=5,pady=8)
     
     # 商品搜索区域
     search_frame = ttk.LabelFrame(
