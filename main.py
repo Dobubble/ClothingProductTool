@@ -189,8 +189,11 @@ def save_product_changes():
     )
     
 def delete_product():
-    """ 删除商品： 第一阶段，只测试确认窗口"""
+    """ 删除选中的商品 """
     
+    global selected_product_id
+    
+    # 获取选中商品
     selected = product_table.selection()
     
     if not selected:
@@ -200,31 +203,60 @@ def delete_product():
         )
         return
         
-    # 获取选中商品的信息
+    # 获取商品资料
     item = product_table.item(selected[0])
     values = item["values"]
     
-    product_id = values[0]
+    product_id = int(values[0])
     product_code = values[1]
     product_name = values[2]
     
-    # 弹出确认窗口
+    # 用户确认
     confirmed = messagebox.askyesno(
         "确认删除",
-        f"确定删除以上商品吗？\n\n"
+        f"确定删除以上商品?\n\n"
         f"ID: {product_id}\n"
-        f"货号: {product_code}\n"
-        f"名称： {product_name}"
+        f"货号： {product_code}\n"
+        f"名称: {product_name}\n\n"
+        "删除后无法通过程序撤销!"
     )
     
     if not confirmed:
         return
         
-    # 暂时不执行数据库删除
+    # 真正执行数据库删除
+    try:
+        affected = database.delete_product(product_id)
+        
+    except sqlite3.Error as exc:
+        messagebox.showerror(
+            "数据库错误",
+            f"删除失败: {exc}"
+        )
+        return
+        
+    # 检查是否删除成功
+    if affected == 0:
+        messagebox.showwarning(
+            "提示",
+            "没有找到需要删除的商品"
+        )
+        return
+        
+    # 清除当前编辑状态
+    selected_product_id = None
+    
+    # 清空输入框
+    code_entry.delete(0, tk.END)
+    name_entry.delete(0, tk.END)
+    size_entry.delete(0, tk.END)
+    
+    # 刷新商品列表
+    refresh_products()
+    
     messagebox.showinfo(
-        "测试成功",
-        f"已确认删除 ID={product_id}的商品。\n"
-        "当前为测试阶段，数据库没有被修改"
+        "成功",
+        f"商品 ID={product_id}已经删除"
     )
     
     

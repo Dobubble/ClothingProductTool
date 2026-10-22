@@ -77,3 +77,17 @@ def update_product(product_id, code, name, size):
         )
         
         return cursor.rowcount
+        
+def delete_product(product_id):
+    """ 根据商品ID 删除数据记录 """
+    
+    with get_connection() as conn:
+        cursor = conn.execute(
+            """
+            DELETE FROM products
+            WHERE id = ?
+            """,
+            (product_id,)
+        )
+        
+        return cursor.rowcount
