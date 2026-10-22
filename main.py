@@ -1,8 +1,9 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import sqlite3
 
 import database
+import excel_utils
 
 selected_product_id = None
 
@@ -281,7 +282,39 @@ def new_product():
     # 将光标放到商品货号输入框
     code_entry.focus_set()
     
+def export_excel():
+    """ 导出商品资料到 Excel """
     
+    # 让用户选择保存位置
+    file_path = filedialog.asksaveasfilename(
+        title="导出商品资料",
+        defaultextension=".xlsx",
+        filetypes=[
+            ("Excel 文件", "*.xlsx")
+        ],
+        initialfile = "商品资料.xlsx"
+    )
+    
+    # 用户取消保存
+    if not file_path:
+        return
+        
+    try:
+        count = excel_utils.export_products(file_path)
+        
+    except (OSError, ValueError) as exc:
+        messagebox.showerror(
+            "导出失败",
+            f"无法保存 Excel 文件: {exc}"
+        )
+        
+        return
+        
+    messagebox.showinfo(
+        "导出成功",
+        f"成功导出 {count} 条商品记录。\n\n"
+        f"文件位置: {file_path}"
+    )
     
 def main():
     # 初始化数据
@@ -381,6 +414,12 @@ def main():
         text="显示全部",
         command=refresh_products
     ).pack(side="left", padx=5)
+    
+    ttk.Button(
+        search_frame,
+        text="导出 Excel",
+        command=export_excel
+    ).pack(sid="left", padx=5)
 
     # 商品列表
     list_frame = ttk.LabelFrame(
