@@ -188,6 +188,46 @@ def save_product_changes():
         "商品修改成功"
     )
     
+def delete_product():
+    """ 删除商品： 第一阶段，只测试确认窗口"""
+    
+    selected = product_table.selection()
+    
+    if not selected:
+        messagebox.showwarning(
+            "提示",
+            "请先选择需要删除的商品"
+        )
+        return
+        
+    # 获取选中商品的信息
+    item = product_table.item(selected[0])
+    values = item["values"]
+    
+    product_id = values[0]
+    product_code = values[1]
+    product_name = values[2]
+    
+    # 弹出确认窗口
+    confirmed = messagebox.askyesno(
+        "确认删除",
+        f"确定删除以上商品吗？\n\n"
+        f"ID: {product_id}\n"
+        f"货号: {product_code}\n"
+        f"名称： {product_name}"
+    )
+    
+    if not confirmed:
+        return
+        
+    # 暂时不执行数据库删除
+    messagebox.showinfo(
+        "测试成功",
+        f"已确认删除 ID={product_id}的商品。\n"
+        "当前为测试阶段，数据库没有被修改"
+    )
+    
+    
 def main():
     # 初始化数据
     database.init_database()
@@ -243,6 +283,20 @@ def main():
         command=save_product_changes
     )
     update_button.grid(row=2, column=3, padx=5, pady=8)
+    
+    # 删除按钮
+    delete_button = ttk.Button(
+        input_frame,
+        text="删除商品",
+        command=delete_product
+    )
+    
+    delete_button.grid(
+        row=2,
+        column=2,
+        padx=5,
+        pady=8
+    )
     
     # 商品搜索区域
     search_frame = ttk.LabelFrame(

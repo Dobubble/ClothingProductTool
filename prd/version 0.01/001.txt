@@ -10,3 +10,9 @@ https://chatgpt.com/c/6ad6c4ea-d84c-83e8-aa9e-2ceb0c5844b3
 6. 增加excel导出按钮，可以指定导出的路径和excel文件名
 7. 增加excel导入按钮，可以指定导入的路径和excel文件名
 8. 增加操作界面语言选择按钮，可以指定中文、英文、德文
+
+
+
+git 配置本地代理
+git config --global http.proxy http://127.0.0.1:7897
+git config --global https.proxy http://127.0.0.1:7897
