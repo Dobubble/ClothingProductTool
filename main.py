@@ -316,6 +316,83 @@ def export_excel():
         f"文件位置: {file_path}"
     )
     
+def import_excel_preview():
+    """ 校验 Excel 并批量导入 SQLite"""
+    
+    file_path = filedialog.askopenfilename(
+        title="选择商品 Excel 文件",
+        filetypes=[
+            ("Excel 文件", "*.xlsx")
+        ]
+    )
+    
+    if not file_path:
+        return
+        
+    try:
+        products = excel_utils.preview_import_products(
+            file_path
+        )
+        
+    except (OSError, ValueError, Exception) as exc:
+        messagebox.showerror(
+            "Excel 检查失败",
+            str(exc)
+        )
+        return
+        
+    if not products:
+        messagebox.showwarning(
+            "提示",
+            "Excel 中没有可导入的商品"
+        )
+        return
+        
+    # 第二部： 显示导入预览
+    preview_lines = []
+    
+    for code, name, size in products[:10]:
+        preview_lines.append(
+            f"{code} | {name} | {size}"
+        )
+        
+    preview_text = "\n".join(preview_lines)
+    
+    if len(products) > 10:
+        preview_text += (
+            f"\n……其余 {len(products)-10}条未显示"
+        )
+        
+    confirmed = messagebox.askyesno(
+        "确认批量导入",
+        f"检查通过， 共{len(products)}条商品。\n\n"
+        f"{preview_text}\n\n"
+        "是否将这些商品写入 SQLite?\n\n"
+        "注意：这是追加导入，重复导入会新增重复记录。"
+    )
+    
+    if not confirmed:
+        return
+        
+    # 第三步: 批量写入数据库
+    try:
+        count = database.import_products(products)
+        
+    except Exception as exc:
+        messagebox.showerror(
+            "导入失败",
+            f"数据库写入失败: {exc}"
+        )
+        return
+    
+    # 第四部：刷新列表
+    refresh_products()
+    
+    messagebox.showinfo(
+        "导入成功",
+        f"成功导入 {count} 条商品"
+    )
+    
 def main():
     # 初始化数据
     database.init_database()
@@ -420,6 +497,12 @@ def main():
         text="导出 Excel",
         command=export_excel
     ).pack(sid="left", padx=5)
+    
+    ttk.Button(
+        search_frame,
+        text="导入 Excel",
+        command=import_excel_preview
+    ).pack(side="left", padx=5)
 
     # 商品列表
     list_frame = ttk.LabelFrame(

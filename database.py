@@ -91,3 +91,40 @@ def delete_product(product_id):
         )
         
         return cursor.rowcount
+        
+def import_products(products):
+    """ 批量导入商品，使用SQLite 事务保证完整性 """
+    
+    if not products:
+        return 0
+        
+    # 检查传入的数据
+    for index, product in enumerate(products, start=1):
+        if len(product) != 3:
+            raise ValueError(
+                f"第 {index} 条商品字段数量不正确"
+            )
+            
+        code, name, size = product
+        
+        if not isinstance(code, str) or not code.strip():
+            raise ValueError(
+                f"第 {index} 条商品货号不能为空"
+            )
+            
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(
+                f"第 {index} 条商品名称不能为空"
+            )
+            
+    # 使用单个数据库事务
+    with get_connection() as conn:
+        
+        cursor = conn.executemany(
+            """
+            INSERT INTO products (code, name, size)
+            VALUES (?, ?, ?)
+            """,
+            products
+        )
+        return cursor.rowcount
