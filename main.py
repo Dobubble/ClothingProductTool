@@ -4,8 +4,17 @@ import sqlite3
 
 import database
 import excel_utils
+from logger_utils import logger
+from backup_utils import backup_database
+
+from image_utils import (
+    import_product_image,
+    load_preview_image,
+    find_product_image
+)
 
 selected_product_id = None
+current_photo = None
 
 def select_product(event=None):
     
@@ -34,6 +43,7 @@ def select_product(event=None):
     code_entry.insert(0, values[1])
     name_entry.insert(0, values[2])
     size_entry.insert(0, values[3])
+    show_product_image(str(values[1]))
 
 def search_product():
     """ 根据输入的关键词查询商品 """
@@ -66,6 +76,7 @@ def refresh_products():
     
     # 清空当前编辑状态
     selected_product_id = None
+    clear_product_image()
     
     # 清空商品列表
     for item in product_table.get_children():
@@ -281,6 +292,7 @@ def new_product():
     
     # 将光标放到商品货号输入框
     code_entry.focus_set()
+    clear_product_image()
     
 def export_excel():
     """ 导出商品资料到 Excel """
@@ -303,6 +315,11 @@ def export_excel():
         count = excel_utils.export_products(file_path)
         
     except (OSError, ValueError) as exc:
+        logger.exception(
+            "Excel 导出失败，目标文件：%s",
+            file_path
+        )
+        
         messagebox.showerror(
             "导出失败",
             f"无法保存 Excel 文件: {exc}"
@@ -335,6 +352,11 @@ def import_excel_preview():
         )
         
     except (OSError, ValueError, Exception) as exc:
+        logger.exception(
+            "Excel 导入检查失败：%s",
+            file_path
+        )
+        
         messagebox.showerror(
             "Excel 检查失败",
             str(exc)
@@ -386,6 +408,17 @@ def import_excel_preview():
     if not confirmed:
         return
         
+    # 执行导入前，先自动备份数据库
+    try:
+        backup_path = backup_database()
+        
+    except Exception as exc:
+        messagebox.showerror(
+            "备份失败",
+            f"数据库自动备份失败，已取消本次导入。\n\n{exc}"
+        )
+        return
+        
     # 第三步: 批量写入数据库
     """
     try:
@@ -395,11 +428,21 @@ def import_excel_preview():
         count = database.import_products(new_products)
         
     except Exception as exc:
+        logger.exception(
+            "SQLite批量导入失败，文件：%s",
+            file_path
+        )
         messagebox.showerror(
             "导入失败",
             f"数据库写入失败: {exc}"
         )
         return
+        
+    logger.info(
+        "Excel 批量导入成功，新增记录数：%d, 备份文件： %s",
+        count,
+        backup_path
+    )
     
     # 第四部：刷新列表
     refresh_products()
@@ -409,6 +452,56 @@ def import_excel_preview():
         f"成功导入 {count} 条商品"
     )
     
+def clear_product_image():
+    global current_photo
+    current_photo = None
+    image_label.configure(image="", text="请选择商品查看图片")
+    image_path_label.configure(text="")
+
+
+def show_product_image(code):
+    global current_photo
+    try:
+        photo = load_preview_image(code, max_width=340, max_height=420)
+        current_photo = photo
+        if photo is None:
+            image_label.configure(image="", text="该商品暂无图片")
+            image_path_label.configure(text="")
+        else:
+            image_label.configure(image=photo, text="")
+            image_path_label.configure(text=str(find_product_image(code).name))
+    except Exception as exc:
+        logger.exception("商品图片显示失败，编码：%s", code)
+        current_photo = None
+        image_label.configure(image="", text="图片加载失败")
+        image_path_label.configure(text="")
+        messagebox.showerror("图片错误", str(exc))
+
+
+def import_image():
+    code = code_entry.get().strip()
+    if not code:
+        messagebox.showwarning("提示", "请先输入或选择商品编码")
+        return
+    file_path = filedialog.askopenfilename(
+        title="选择商品图片",
+        filetypes=[("图片文件", "*.jpg *.jpeg *.png *.webp")]
+    )
+    if not file_path:
+        return
+    try:
+        existing = find_product_image(code)
+        if existing is not None:
+            if not messagebox.askyesno("确认替换", f"编码 {code} 已有图片，确定替换吗？"):
+                return
+        target = import_product_image(code, file_path)
+        show_product_image(code)
+        messagebox.showinfo("成功", f"商品图片已导入：\n{target}")
+    except Exception as exc:
+        logger.exception("商品图片导入失败，编码：%s", code)
+        messagebox.showerror("图片导入失败", str(exc))
+
+
 def main():
     # 初始化数据
     database.init_database()
@@ -416,13 +509,14 @@ def main():
     global product_table
     global code_entry, name_entry, size_entry
     global search_entry
+    global image_label, image_path_label
     # global selected_product_id
     
     # 创建主窗口
     root = tk.Tk()
     root.title("服装商品资料管理工具")
-    root.geometry("800x500")
-    root.minsize(650, 400)
+    root.geometry("1150x680")
+    root.minsize(960, 550)
 
     # 输入区域
     input_frame = ttk.LabelFrame(
@@ -512,7 +606,7 @@ def main():
         search_frame,
         text="导出 Excel",
         command=export_excel
-    ).pack(sid="left", padx=5)
+    ).pack(side="left", padx=5)
     
     ttk.Button(
         search_frame,
@@ -520,19 +614,25 @@ def main():
         command=import_excel_preview
     ).pack(side="left", padx=5)
 
-    # 商品列表
+    # 商品列表和图片区域并排放置
+    content_frame = ttk.Frame(root)
+    content_frame.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+
     list_frame = ttk.LabelFrame(
-        root,
+        content_frame,
         text="商品列表",
         padding=10
     )
 
-    list_frame.pack(
-        fill="both",
-        expand=True,
-        padx=12,
-        pady=(0,12)
-    )
+    list_frame.pack(side="left", fill="both", expand=True, padx=(0, 8))
+
+    image_frame = ttk.LabelFrame(content_frame, text="商品图片", padding=10)
+    image_frame.pack(side="right", fill="y")
+    image_label = ttk.Label(image_frame, text="请选择商品查看图片", anchor="center")
+    image_label.pack(fill="both", expand=True)
+    image_path_label = ttk.Label(image_frame, text="", anchor="center")
+    image_path_label.pack(pady=(6, 0))
+    ttk.Button(image_frame, text="导入商品图片", command=import_image).pack(pady=(8, 0))
 
     product_table = ttk.Treeview(
         list_frame,
@@ -561,4 +661,5 @@ def main():
     root.mainloop()
 
 if __name__ == "__main__":
+    logger.info("ClothingProductTool 程序启动")
     main()
