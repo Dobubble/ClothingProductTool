@@ -128,3 +128,40 @@ def import_products(products):
             products
         )
         return cursor.rowcount
+        
+def filter_new_products(products):
+    """ 筛选数据库中不存在的商品，并去除 Excel 内部重复项 """
+    
+    existing_products = get_all_products()
+    
+    # 数据库中已有的商品组合
+    existing_keys = {
+        (
+            str(row[1]).strip(),
+            str(row[2]).strip(),
+            str(row[3]).strip() if row[3] is not None else ""
+        )
+        for row in existing_products
+    }
+    
+    new_products = []
+    duplicate_count = 0
+    
+    # 记录本次 Excel 中已遇到的商品
+    seen_keys = set(existing_keys)
+    
+    for code, name, size in products:
+        key = (
+            str(code).strip(),
+            str(name).strip(),
+            str(size).strip()
+        )
+        
+        if key in seen_keys:
+            duplicate_count += 1
+            continue
+            
+        seen_keys.add(key)
+        new_products.append(key)
+        
+    return new_products, duplicate_count

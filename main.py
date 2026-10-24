@@ -363,20 +363,36 @@ def import_excel_preview():
             f"\n……其余 {len(products)-10}条未显示"
         )
         
+    # 筛选新商品，跳过重复商品
+    new_products, duplicate_count = database.filter_new_products(products)
+    
+    if not new_products:
+        messagebox.showinfo(
+            "导入结果",
+            f"Excel 共 {len(products)}条商品。\n"
+            f"重复商品： {duplicate_count}条。\n\n"
+            "没有需要新增的商品。"
+        )
+        return
+        
     confirmed = messagebox.askyesno(
         "确认批量导入",
-        f"检查通过， 共{len(products)}条商品。\n\n"
-        f"{preview_text}\n\n"
-        "是否将这些商品写入 SQLite?\n\n"
-        "注意：这是追加导入，重复导入会新增重复记录。"
+        f"Excel 总记录： {len(products)}条\n"
+        f"重复商品：{duplicate_count}条\n"
+        f"准备新增：{len(new_products)}条\n\n"
+        "是否继续导入新商品？"
     )
     
     if not confirmed:
         return
         
     # 第三步: 批量写入数据库
+    """
     try:
         count = database.import_products(products)
+    """
+    try:
+        count = database.import_products(new_products)
         
     except Exception as exc:
         messagebox.showerror(
