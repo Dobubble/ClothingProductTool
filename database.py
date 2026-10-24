@@ -1,6 +1,10 @@
 import sqlite3
 from pathlib import Path
+from app_paths import DB_PATH, ensure_directories
 
+ensure_directories()
+
+'''
 # 项目所在目录
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -10,6 +14,7 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # SQLite 数据库文件
 DB_PATH = DATA_DIR / "products.db"
+'''
 
 def get_connection():
     """连接数据库"""

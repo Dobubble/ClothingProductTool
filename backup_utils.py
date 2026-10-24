@@ -5,9 +5,16 @@ from uuid import uuid4
 
 from logger_utils import logger
 
+from app_paths import DB_PATH, BACKUP_DIR, ensure_directories
+
+ensure_directories()
+
+'''
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "data" / "products.db"
 BACKUP_DIR = BASE_DIR / "backups"
+'''
+
 
 def backup_database():
     """ 使用 SQLitet 在线备份接口创建数据库备份 """

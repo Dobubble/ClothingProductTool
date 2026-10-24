@@ -34,3 +34,6 @@ images/
 
 # 日志路径
 logs/
+
+# 编译路径
+dist/

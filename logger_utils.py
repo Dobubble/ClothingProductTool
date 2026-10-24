@@ -2,11 +2,17 @@ import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+from app_paths import LOG_DIR, ensure_directories
+
+ensure_directories()
+
+'''
 # 项目根目录
 BASE_DIR = Path(__file__).resolve().parent
 
 # 日志目录
 LOG_DIR = BASE_DIR / "logs"
+'''
 
 # 日志文件
 LOG_FILE = LOG_DIR / "app.log"

@@ -4,9 +4,15 @@ import shutil
 import tempfile
 from PIL import Image, ImageTk
 from logger_utils import logger
+from app_paths import IMAGE_DIR, ensure_directories
 
+ensure_directories()
+
+'''
 BASE_DIR = Path(__file__).resolve().parent
 IMAGE_DIR = BASE_DIR / 'images'
+'''
+
 IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 SUPPORTED_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.webp')
 

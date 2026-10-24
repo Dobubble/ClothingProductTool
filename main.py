@@ -13,6 +13,11 @@ from image_utils import (
     find_product_image
 )
 
+from app_paths import ensure_directories
+
+ensure_directories()
+database.init_database()
+
 selected_product_id = None
 current_photo = None
 

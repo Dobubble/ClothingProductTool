@@ -50,3 +50,17 @@ WAL模式？？？
 
 
 
+一、V1.0 最终目标
+功能	实现方式
+Python 程序转 EXE	PyInstaller
+Windows 安装向导	Inno Setup
+桌面快捷方式	安装时可选择创建
+开始菜单快捷方式	自动创建
+Windows 已安装应用列表	Inno Setup 注册
+卸载程序	Inno Setup
+卸载保留商品数据	用户数据独立存储
+升级不丢失数据	安装目录与数据目录分离
+程序异常日志	保留现有 logger_utils.py
+
+
+
